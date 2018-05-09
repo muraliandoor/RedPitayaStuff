@@ -3,9 +3,9 @@ from redpitaya.overlay.mercury import mercury as overlay
 # PID functions
 SAMPLE_RATE = 125e6 # samples per second
 
-SET_POINT = 0 # Volts
+SET_POINT = 0.5 # Volts
 P_FACTOR = 4
-I_FACTOR = 10 # us
+I_FACTOR = 100 # us
 D_FACTOR = 100 # us
 
 MAX_SAMPLES = round(SAMPLE_RATE/1e6 * max(D_FACTOR, I_FACTOR))
@@ -21,9 +21,9 @@ def integral(data):
     num_samples = round(SAMPLE_RATE/1e6 * I_FACTOR)
 
     dt = I_FACTOR / num_samples
-    error = sum((SET_POINT - data[-i] for i in range(num_samples)))
+    error = SET_POINT - data
 
-    return error * dt
+    return sum(error[-num_samples:]) * dt
 
 def proportional(data):
     return (SET_POINT - data[-1]) * P_FACTOR
@@ -60,11 +60,17 @@ measurement.enable = True
 # Run PID loop
 i=0
 while True:
+    # Collect data
+#    print ("Loop:",i)
     i+=1
     measurement.trigger() # Start collection
     while (measurement.status_run()): pass # Wait for data
     data = measurement.data(MAX_SAMPLES) # Read data
+#    print ("In:", data[-1])
+    # Calculate correction
     correction = (proportional(data) + derivative(data) + integral(data))/500
+#    print ("Correction:", correction)
+    # Output correction
     output.offset = data[-1] + correction
     output.trigger()
     measurement.reset()

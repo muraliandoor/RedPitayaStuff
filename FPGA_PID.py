@@ -12,12 +12,12 @@ class FPGA_PID:
     """
 
     def __init__(self, in_channel, out_channel, set_point, k_proportional, k_derivative, k_integral):
+        self.channels = (in_channel, out_channel)
+
         self.set_point(set_point)
         self.proportional(k_proportional)
         self.derivative(k_derivative)
         self.integral(k_integral)
-
-        self.channels = (in_channel, out_channel)
 
     def set_point(self, val):
         if val < -2**13 or val > 2**13 - 1:

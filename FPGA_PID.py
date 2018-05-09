@@ -1,3 +1,5 @@
+import subprocess
+
 class FPGA_PID:
     """
     Interface with the buffers that control the Red Pitaya's FPGA PID
@@ -12,12 +14,16 @@ class FPGA_PID:
 
     def set_point(self, val):
         self.sp = val
+        subprocess.run(["monitor", 0x40300010, val])
 
     def proportional(self, val):
         self.kp = val
+        subprocess.run(["monitor", 0x40300014, val])
 
     def derivative(self, val):
         self.kd = val
+        subprocess.run(["monitor", 0x4030001c, val])
 
     def integral(self, val):
         self.ki = val
+        subprocess.run(["monitor", 0x40300018, val])

@@ -3,9 +3,9 @@ from redpitaya.overlay.mercury import mercury as overlay
 # PID functions
 SAMPLE_RATE = 125e6 # samples per second
 
-SET_POINT = 0.5 # Volts
+SET_POINT = 0 # Volts
 P_FACTOR = 4
-I_FACTOR = 100 # us
+I_FACTOR = 10 # us
 D_FACTOR = 100 # us
 
 MAX_SAMPLES = round(SAMPLE_RATE/1e6 * max(D_FACTOR, I_FACTOR))
@@ -32,17 +32,17 @@ def proportional(data):
 fpga = overlay()
 
 measurement = fpga.osc(0, 1.0)
-output = fpga.gen(0)
+output = fpga.gen(1)
 
 # Set up output settings
 output.mode = "BURST"
-output.amplitude = 1.0
+output.amplitude = 1
 output.offset = 0
 output.waveform = [0] # Output a constant signal
 output.burst_data_repetitions = 1
 output.burst_data_length = 1
 output.burst_period_length = 1
-output.burst_period_number = 1
+output.burst_period_number = 0
 output.enable = True
 output.reset()
 output.start()
@@ -55,19 +55,17 @@ measurement.trigger_post = MAX_SAMPLES
 measurement.trig_src = 0
 measurement.reset()
 measurement.start()
+measurement.enable = True
 
 # Run PID loop
+i=0
 while True:
-    # Collect data
+    i+=1
     measurement.trigger() # Start collection
     while (measurement.status_run()): pass # Wait for data
     data = measurement.data(MAX_SAMPLES) # Read data
-
-    # Calculate correction
-    correction = proportional(data) + derivative(data) + integral(data)
-
-    # Output correction
-    output.waveform = [data[-1] + correction]
-    output.reset()
-    output.start()
+    correction = (proportional(data) + derivative(data) + integral(data))/500
+    output.offset = data[-1] + correction
     output.trigger()
+    measurement.reset()
+    measurement.start()
